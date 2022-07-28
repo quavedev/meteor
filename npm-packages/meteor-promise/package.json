@@ -27,7 +27,7 @@
   },
   "license": "MIT",
   "devDependencies": {
-    "fibers": "https://github.com/quavedev/node-fibers/archive/refs/tags/v5.0.2.tar.gz",
+    "fibers": "https://github.com/meteor/node-fibers/archive/refs/tags/5.0.2.tar.gz",
     "mocha": "^5.2.0",
     "promise": "^8.1.0"
   }

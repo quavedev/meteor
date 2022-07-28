@@ -53,7 +53,7 @@
     "@babel/plugin-proposal-decorators": "7.14.5",
     "@babel/plugin-syntax-decorators": "7.14.5",
     "d3": "4.13.0",
-    "fibers": "https://github.com/quavedev/node-fibers/archive/refs/tags/v5.0.2.tar.gz",
+    "fibers": "https://github.com/meteor/node-fibers/archive/refs/tags/5.0.2.tar.gz",
     "meteor-promise": "0.9.0",
     "mocha": "6.2.3",
     "promise": "8.1.0",
