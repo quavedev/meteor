@@ -61,7 +61,7 @@ module.exports = {
         );
         if (
           !Object.keys(walker.cachedParsedFile).length ||
-          (!realPath) in walker.cachedParsedFile
+          !(realPath in walker.cachedParsedFile)
         ) {
           return;
         }
