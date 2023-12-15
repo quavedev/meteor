@@ -7,6 +7,21 @@
 
 const fs = require('fs');
 const { Walker } = require('./helpers');
+const { debug } = require('../../util/utilities');
+
+const INVALID_FUNCTIONS = {
+  findOne: { suggestion: 'findOneAsync' },
+  insert: { suggestion: 'insertAsync' },
+  update: { suggestion: 'updateAsync' },
+  upsert: { suggestion: 'upsertAsync' },
+  remove: { suggestion: 'removeAsync' },
+  createIndex: { suggestion: 'createIndexAsync' },
+  fetch: { suggestion: 'fetchAsync' },
+  count: { suggestion: 'countAsync' }, // TODO we can go to the parent to check if it's also a call expression from a find function
+};
+
+const INVALID_FUNCTIONS_NAMES = Object.keys(INVALID_FUNCTIONS);
+
 module.exports = {
   meta: {
     type: 'problem',
@@ -16,25 +31,22 @@ module.exports = {
     },
     fixable: 'code',
   },
-  create: (context) => {
+  create: context => {
     // ---------------------------------------------------------------------------
     // Helpers
     // ---------------------------------------------------------------------------
 
-    const invalidFunctionNames = [
-      'findOne',
-      'insert',
-      'update',
-      'upsert',
-      'remove',
-      'createIndex',
-      'fetch',
-      'count',
-    ];
-    function createError(context, node) {
+    function createError({
+      context,
+      node,
+      invalidFunction,
+      invalidFunctionDefinition = '',
+    }) {
       const error = {
         node: node.parent,
-        message: 'Should use Meteor async calls',
+        message: `Should use Meteor async calls${
+          invalidFunctionDefinition.suggestion ? ` use "${invalidFunctionDefinition.suggestion}"` : ''
+        } instead of "${invalidFunction}"`,
       };
       context.report(error);
     }
@@ -44,15 +56,15 @@ module.exports = {
     // ---------------------------------------------------------------------------
 
     return {
-      Program: function () {
+      Program: function() {
         new Walker(context.cwd).walkApp(['server'], ({ path }) => {
-          // console.log(`Processing file ${path}`);
+          debug(`Processing file ${path}`);
         });
       },
-      MemberExpression: function (node) {
+      MemberExpression: function(node) {
         const walker = new Walker(context.cwd);
         const realPath = fs.realpathSync.native(context.physicalFilename);
-        console.log(
+        debug(
           'Checking if should evaluate realPath',
           realPath,
           context.physicalFilename,
@@ -64,14 +76,25 @@ module.exports = {
         ) {
           return;
         }
-        // console.log('Found a server file!!');
-        if (node.property && node.property.type === 'Identifier') {
-          // checks if we are inside the server
-          // console.log(context.sourceCode.getAncestors(node));
-
-          // context.sourceCode.getAncestors(node);
-          if (invalidFunctionNames.includes(node.property.name)) {
-            createError(context, node);
+        debug('Found a server file!!');
+        // CallExpression means it's a function call so we don't throw an error for example for a property called count in an object but we do throw when it's a count() function call.
+        if (
+          node.property &&
+          node.property.type === 'Identifier' &&
+          node.object.type === 'CallExpression'
+        ) {
+          const invalidFunction = INVALID_FUNCTIONS_NAMES.find(
+            ifn => ifn === node.property.name
+          );
+          const invalidFunctionDefinition =
+            invalidFunction && INVALID_FUNCTIONS[invalidFunction];
+          if (invalidFunctionDefinition) {
+            createError({
+              context,
+              node,
+              invalidFunction,
+              invalidFunctionDefinition,
+            });
           }
         }
       },
