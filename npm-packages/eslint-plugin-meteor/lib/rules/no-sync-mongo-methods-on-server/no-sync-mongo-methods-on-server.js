@@ -15,12 +15,24 @@ const INVALID_FUNCTIONS = {
   update: { suggestion: 'updateAsync' },
   upsert: { suggestion: 'upsertAsync' },
   remove: { suggestion: 'removeAsync' },
-  createIndex: { suggestion: 'createIndexAsync' },
+  createIndex: {
+    suggestion: 'createIndexAsync',
+    skipForRawCollection: true,
+    debug: true,
+  },
   fetch: { suggestion: 'fetchAsync' },
   count: { suggestion: 'countAsync' }, // TODO we can go to the parent to check if it's also a call expression from a find function
 };
 
 const INVALID_FUNCTIONS_NAMES = Object.keys(INVALID_FUNCTIONS);
+
+function hasRawCollectionInTheChain(node) {
+  const previousFunction = node.object.callee;
+  if (!previousFunction || previousFunction.type !== 'MemberExpression') {
+    return false;
+  }
+  return previousFunction.property.name === 'rawCollection';
+}
 
 module.exports = {
   meta: {
@@ -45,7 +57,9 @@ module.exports = {
       const error = {
         node: node.parent,
         message: `Should use Meteor async calls${
-          invalidFunctionDefinition.suggestion ? ` use "${invalidFunctionDefinition.suggestion}"` : ''
+          invalidFunctionDefinition.suggestion
+            ? ` use "${invalidFunctionDefinition.suggestion}"`
+            : ''
         } instead of "${invalidFunction}"`,
       };
       context.report(error);
@@ -89,6 +103,16 @@ module.exports = {
           const invalidFunctionDefinition =
             invalidFunction && INVALID_FUNCTIONS[invalidFunction];
           if (invalidFunctionDefinition) {
+            if (invalidFunctionDefinition.debug) {
+              debug(node);
+            }
+            if (
+              invalidFunctionDefinition.skipForRawCollection &&
+              hasRawCollectionInTheChain(node)
+            ) {
+              debug(`Skipping ${invalidFunction} to be considered error because it was used after rawCollection()`);
+              return;
+            }
             createError({
               context,
               node,

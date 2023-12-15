@@ -11,6 +11,8 @@ const allRules = {
   'no-dom-lookup-on-created': require('./rules/no-dom-lookup-on-created'),
   'no-template-parent-data': require('./rules/no-template-parent-data'),
   'no-sync-mongo-methods-on-server': require('./rules/no-sync-mongo-methods-on-server/no-sync-mongo-methods-on-server'),
+  'no-fibers-future-usage': require('./rules/no-fibers-future-usage'),
+  'no-promise-fibers-usage': require('./rules/no-promise-fibers-usage'),
 };
 
 module.exports = {
@@ -36,6 +38,8 @@ module.exports = {
         'meteor/no-dom-lookup-on-created': 0,
         'meteor/no-template-parent-data': 0,
         'meteor/no-sync-mongo-methods-on-server': 0,
+        'meteor/no-fibers-future-usage': 0,
+        'meteor/no-promise-fibers-usage': 0,
       },
     },
   },
