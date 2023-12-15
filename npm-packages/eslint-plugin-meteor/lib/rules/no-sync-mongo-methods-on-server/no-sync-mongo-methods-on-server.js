@@ -23,30 +23,22 @@ const INVALID_FUNCTIONS = {
   fetch: { suggestion: 'fetchAsync', isCollection: true },
   count: { suggestion: 'countAsync', isCursor: true },
   map: { suggestion: 'mapAsync', isCursor: true, debug: true },
-  forEach: { suggestion: 'forEachAsync', isCursor: true }, // TODO we can go to the parent to check if it's also a call expression from a find function
+  forEach: { suggestion: 'forEachAsync', isCursor: true },
 };
 
 const INVALID_FUNCTIONS_NAMES = Object.keys(INVALID_FUNCTIONS);
-function wasCreatedBySpecificFunction({ node, functionName }) {
-  // Check if the node is an assignment expression
-  if (node.type !== 'AssignmentExpression') {
-    return false;
-  }
+function wasCreatedBySpecificFunction({ context, node, functionName }) {
+  const variableName = node.property?.parent?.object?.name;
+  const scope = context.getScope();
+  const variables = scope.variables;
+  const initializer = variables.find(({ name }) => name === variableName)
+    ?.defs?.['0']?.parent?.declarations?.['0']?.init;
 
-  // Check if the right-hand side of the assignment is a call expression
-  const right = node.right;
-  if (right.type !== 'CallExpression') {
-    return false;
-  }
-
-  // Check if the call expression is a member expression (e.g., MembersCollection.find)
-  const callee = right.callee;
-  if (callee.type !== 'MemberExpression') {
-    return false;
-  }
-
-  // Check if the property of the member expression matches the function name
-  return callee.property.name === functionName;
+  // callee is when it's a direct usage, like find()
+  // without callee is when it's indirect, like find().fetchAsync() so we get the fetchAsync() one
+  const variableCalleeName = (initializer?.callee || initializer)?.property
+    ?.name;
+  return variableCalleeName === functionName;
 }
 
 function hasSpecificFunctionInTheChain({ node, functionName }) {
@@ -115,18 +107,18 @@ module.exports = {
       MemberExpression: function (node) {
         const walker = new Walker(getInitFolder(context));
         const realPath = fs.realpathSync.native(context.physicalFilename);
-        if (
-          !Object.keys(walker.cachedParsedFile).length ||
-          !(realPath in walker.cachedParsedFile)
-        ) {
+        const parsedFiles = process.env.METEOR_ESLINT_PLUGIN_FILES
+          ? process.env.METEOR_ESLINT_PLUGIN_FILES.split(',').reduce(
+              (acc, item) => ({ ...acc, [item]: true }),
+              {}
+            )
+          : walker.cachedParsedFile;
+        if (!Object.keys(parsedFiles).length || !(realPath in parsedFiles)) {
           debug('Skipping', realPath);
           return;
         }
         // CallExpression means it's a function call so we don't throw an error for example for a property called count in an object but we do throw when it's a count() function call.
-        if (
-          node.property &&
-          node.property.type === 'Identifier'
-        ) {
+        if (node.property && node.property.type === 'Identifier') {
           const invalidFunction = INVALID_FUNCTIONS_NAMES.find(
             (ifn) => ifn === node.property.name
           );
@@ -148,24 +140,28 @@ module.exports = {
               );
               return;
             }
-            // if (invalidFunctionDefinition.isCursor) {
-            //   const isCursorChain = hasSpecificFunctionInTheChain({
-            //     node,
-            //     functionName: 'find',
-            //   });
-            //   const wasCreatedByFind = wasCreatedBySpecificFunction({
-            //     node,
-            //     functionName: 'find',
-            //   });
-            //
-            //   if (!isCursorChain && !wasCreatedByFind) {
-            //     debug(
-            //       `Skipping ${invalidFunction} to be considered error because it was used not in a cursor`,
-            //       { isCursor: isCursorChain, wasCreatedByFind }
-            //     );
-            //     return;
-            //   }
-            // }
+            if (invalidFunctionDefinition.isCursor) {
+              const isCursorChain = hasSpecificFunctionInTheChain({
+                node,
+                functionName: 'find',
+              });
+
+              const wasCreatedByFind =
+                !isCursorChain &&
+                wasCreatedBySpecificFunction({
+                  context,
+                  node,
+                  functionName: 'find',
+                });
+
+              if (!isCursorChain && !wasCreatedByFind) {
+                debug(
+                  `Skipping ${invalidFunction} to be considered error because it was used not in a cursor`,
+                  { isCursorChain, wasCreatedByFind }
+                );
+                return;
+              }
+            }
             createError({
               context,
               node,
