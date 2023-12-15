@@ -10,18 +10,21 @@ const { Walker } = require('./helpers');
 const { debug } = require('../../util/utilities');
 
 const INVALID_FUNCTIONS = {
-  findOne: { suggestion: 'findOneAsync' },
-  insert: { suggestion: 'insertAsync' },
-  update: { suggestion: 'updateAsync' },
-  upsert: { suggestion: 'upsertAsync' },
-  remove: { suggestion: 'removeAsync' },
+  findOne: { suggestion: 'findOneAsync', isCollection: true },
+  insert: { suggestion: 'insertAsync', isCollection: true },
+  update: { suggestion: 'updateAsync', isCollection: true },
+  upsert: { suggestion: 'upsertAsync', isCollection: true },
+  remove: { suggestion: 'removeAsync', isCollection: true },
   createIndex: {
     suggestion: 'createIndexAsync',
+    isCollection: true,
     skipForRawCollection: true,
     debug: true,
   },
-  fetch: { suggestion: 'fetchAsync' },
-  count: { suggestion: 'countAsync' }, // TODO we can go to the parent to check if it's also a call expression from a find function
+  fetch: { suggestion: 'fetchAsync', isCollection: true },
+  count: { suggestion: 'countAsync', isCursor: true },
+  map: { suggestion: 'mapAsync', isCursor: true },
+  forEach: { suggestion: 'forEachAsync', isCursor: true }, // TODO we can go to the parent to check if it's also a call expression from a find function
 };
 
 const INVALID_FUNCTIONS_NAMES = Object.keys(INVALID_FUNCTIONS);
@@ -35,8 +38,10 @@ function hasRawCollectionInTheChain(node) {
 }
 
 function getInitFolder(context) {
-  return `${context.cwd}/${context.settings?.meteor?.rootDirectories?.[0]}` ||
-    context.cwd;
+  const optionalRootDir = context.settings?.meteor?.rootDirectories?.[0];
+  return (
+    (optionalRootDir && `${context.cwd}/${optionalRootDir}`) || context.cwd
+  );
 }
 
 module.exports = {
@@ -94,15 +99,9 @@ module.exports = {
           !Object.keys(walker.cachedParsedFile).length ||
           !(realPath in walker.cachedParsedFile)
         ) {
-          debug(
-            'Skipping',
-            realPath,
-            context.physicalFilename,
-            walker.cachedParsedFile
-          );
+          debug('Skipping', realPath);
           return;
         }
-        debug('Found a server file!!');
         // CallExpression means it's a function call so we don't throw an error for example for a property called count in an object but we do throw when it's a count() function call.
         if (
           node.property &&
