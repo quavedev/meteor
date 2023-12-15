@@ -91,7 +91,6 @@ function isNpmDependency(importPath) {
 }
 
 const handledFiles = new Set();
-let cachedParsedFile;
 
 function getAbsFilePath(filePath) {
   // some files have no ext or are only the ext (.gitignore, .editorconfig, etc.)
@@ -185,13 +184,34 @@ class Walker {
       : {};
   }
   walkApp(archList, onFile) {
-    handleFolder(
-      this.appPath,
-      this.appPath,
-      archList,
-      onFile,
-      this.cachedParsedFile
-    );
+    if (Object.keys(this.cachedParsedFile).length > 0) {
+      return;
+    }
+    let initialServerFile;
+    const packageJsonLocation = path.join(this.appPath, 'package.json');
+    if (fs.existsSync(packageJsonLocation)) {
+      const content = JSON.parse(fs.readFileSync(packageJsonLocation));
+      const { meteor } = content;
+      if (meteor && meteor.mainModule && meteor.mainModule.server) {
+        initialServerFile = path.join(this.appPath, meteor.mainModule.server);
+      }
+    }
+    if (initialServerFile) {
+      handleFile(
+        initialServerFile,
+        this.appPath,
+        onFile,
+        this.cachedParsedFile
+      );
+    } else {
+      handleFolder(
+        this.appPath,
+        this.appPath,
+        archList,
+        onFile,
+        this.cachedParsedFile
+      );
+    }
     fs.writeFileSync(this.filePath(), JSON.stringify(this.cachedParsedFile));
   }
   get cachedParsedFile() {

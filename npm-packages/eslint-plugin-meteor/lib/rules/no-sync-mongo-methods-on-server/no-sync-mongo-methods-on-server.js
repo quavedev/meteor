@@ -7,7 +7,6 @@
 
 const fs = require('fs');
 const { Walker } = require('./helpers');
-const cachedParsedFile = new Map();
 module.exports = {
   meta: {
     type: 'problem',
