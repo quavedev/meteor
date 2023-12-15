@@ -23,25 +23,25 @@ ruleTester.run('no-promise-fibers-usage', rule, {
     {
       code: 'Promise.await()',
       errors: [
-        { message: 'Fibers abstractions for Promises should be replaced by native methods', type: 'MemberExpression' },
+        { message: 'Promise.await() is a Fibers abstraction for Promises should be replaced by native methods', type: 'MemberExpression' },
       ],
     },
     {
       code: 'Promise.awaitAll()',
       errors: [
-        { message: 'Fibers abstractions for Promises should be replaced by native methods', type: 'MemberExpression' },
+        { message: 'Promise.awaitAll() is a Fibers abstraction for Promises should be replaced by native methods', type: 'MemberExpression' },
       ],
     },
     {
       code: 'Promise.async(function() {})',
       errors: [
-        { message: 'Fibers abstractions for Promises should be replaced by native methods', type: 'MemberExpression' },
+        { message: 'Promise.async() is a Fibers abstraction for Promises should be replaced by native methods', type: 'MemberExpression' },
       ],
     },
     {
       code: 'Promise.asyncApply(function() {})',
       errors: [
-        { message: 'Fibers abstractions for Promises should be replaced by native methods', type: 'MemberExpression' },
+        { message: 'Promise.asyncApply() is a Fibers abstraction for Promises should be replaced by native methods', type: 'MemberExpression' },
       ],
     },
     {

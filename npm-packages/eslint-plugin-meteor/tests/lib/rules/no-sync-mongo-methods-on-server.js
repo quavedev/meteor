@@ -13,7 +13,6 @@ const ruleTester = new RuleTester();
 ruleTester.run('no-sync-mongo-methods-on-server', rule, {
   only: true,
   valid: [
-    // give me some valid tests
     { code: 'TestCollection.findOneAsync()' },
   ],
 
@@ -21,7 +20,7 @@ ruleTester.run('no-sync-mongo-methods-on-server', rule, {
     {
       code: 'TestCollection.findOne()',
       errors: [
-        { message: 'Should use Meteor async calls', type: 'CallExpression' },
+        { message: 'Should use Meteor async calls use "findOneAsync" instead of "findOne"', type: 'CallExpression' },
       ],
     },
   ],

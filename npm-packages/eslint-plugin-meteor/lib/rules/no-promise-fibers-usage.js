@@ -68,7 +68,7 @@ module.exports = {
   create: (context) => ({
     MemberExpression: (node) => {
       if (isUsingNotAllowedPromiseFiberMethod(node)) {
-        return context.report(node, "Fibers abstractions for Promises should be replaced by native methods");
+        return context.report(node, `Promise.${node.property.name}() is a Fibers abstraction for Promises should be replaced by native methods`);
       }
 
       if (isPromisePrototypeAwaitCall(node)) {

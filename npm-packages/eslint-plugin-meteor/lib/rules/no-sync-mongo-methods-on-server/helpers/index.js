@@ -149,6 +149,8 @@ function handleFile(_filePath, appPath, onFile, cachedParsedFile) {
 }
 
 function handleFolder(folderPath, appPath, archList, onFile, cachedParsedFile) {
+  console.log(`folderPath`, folderPath);
+
   const dirents = fs.readdirSync(folderPath, { withFileTypes: true });
   // console.log('dirents', dirents)
   for (let i = 0; i < dirents.length; i += 1) {
@@ -183,10 +185,11 @@ class Walker {
       ? JSON.parse(fs.readFileSync(this.filePath()))
       : {};
   }
-  walkApp(archList, onFile) {
+  walkApp({ archList, onFile,  isTest }) {
     if (Object.keys(this.cachedParsedFile).length > 0) {
       return;
     }
+
     let initialServerFile;
     const packageJsonLocation = path.join(this.appPath, 'package.json');
     if (fs.existsSync(packageJsonLocation)) {

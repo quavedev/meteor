@@ -34,6 +34,11 @@ function hasRawCollectionInTheChain(node) {
   return previousFunction.property.name === 'rawCollection';
 }
 
+function getInitFolder(context) {
+  return `${context.cwd}/${context.settings?.meteor?.rootDirectories?.[0]}` ||
+    context.cwd;
+}
+
 module.exports = {
   meta: {
     type: 'problem',
@@ -71,23 +76,30 @@ module.exports = {
 
     return {
       Program: function() {
-        new Walker(context.cwd).walkApp(['server'], ({ path }) => {
-          debug(`Processing file ${path}`);
+        // if NYC_PROCESS_ID is present it means we are running tests
+        const isTest = !!process.env.NYC_PROCESS_ID;
+        // TODO support multiple directories https://quave.slack.com/archives/C0606SXCXFW/p1702639670046879?thread_ts=1702637224.400439&cid=C0606SXCXFW
+        new Walker(getInitFolder(context)).walkApp({
+          archList: ['server'],
+          isTest,
+          onFile: ({ path }) => {
+            debug(`Processing file ${path}`);
+          },
         });
       },
       MemberExpression: function(node) {
-        const walker = new Walker(context.cwd);
+        const walker = new Walker(getInitFolder(context));
         const realPath = fs.realpathSync.native(context.physicalFilename);
-        debug(
-          'Checking if should evaluate realPath',
-          realPath,
-          context.physicalFilename,
-          walker.cachedParsedFile
-        );
         if (
           !Object.keys(walker.cachedParsedFile).length ||
           !(realPath in walker.cachedParsedFile)
         ) {
+          debug(
+            'Skipping',
+            realPath,
+            context.physicalFilename,
+            walker.cachedParsedFile
+          );
           return;
         }
         debug('Found a server file!!');
@@ -110,7 +122,9 @@ module.exports = {
               invalidFunctionDefinition.skipForRawCollection &&
               hasRawCollectionInTheChain(node)
             ) {
-              debug(`Skipping ${invalidFunction} to be considered error because it was used after rawCollection()`);
+              debug(
+                `Skipping ${invalidFunction} to be considered error because it was used after rawCollection()`
+              );
               return;
             }
             createError({
