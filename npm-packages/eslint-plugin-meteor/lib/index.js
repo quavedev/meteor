@@ -13,6 +13,7 @@ const allRules = {
   'no-sync-mongo-methods-on-server': require('./rules/no-sync-mongo-methods-on-server/no-sync-mongo-methods-on-server'),
   'no-fibers-future-usage': require('./rules/no-fibers-future-usage'),
   'no-promise-fibers-usage': require('./rules/no-promise-fibers-usage'),
+  'no-meteor-wrap-async-usage': require('./rules/no-meteor-wrap-async-usage'),
 };
 
 module.exports = {
@@ -40,6 +41,7 @@ module.exports = {
         'meteor/no-sync-mongo-methods-on-server': 0,
         'meteor/no-fibers-future-usage': 0,
         'meteor/no-promise-fibers-usage': 0,
+        'meteor/no-meteor-wrap-async-usage': 0,
       },
     },
   },
